@@ -1,0 +1,42 @@
+body {
+    background: black;
+    font: 18px Arial, sans-serif;
+    color: white;
+}
+header, h1, footer {
+    color: white;
+}
+header {
+    text-align: center;
+    font-size: 35px;
+    padding: 30px;
+}
+footer {
+    text-align: center;
+    padding: 10px;
+}
+canvas {
+    border:1px solid lightgrey;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    /* width: 750px; */
+    /* height: 400px; */
+}
+a:link {    /* unvisited link */
+    color: #ff0000;
+    text-decoration: none;
+    border-bottom: 1px solid;
+}
+a:visited {    /* visited link */
+    color: #ff00ff;
+}
+a:hover {    /* mouse over link */
+    color: #00ff00;
+    border-bottom: none;
+}
+a:active {    /* active link */
+    color: #00ffff;
+}
