@@ -123,6 +123,7 @@ function getParam(name, defaultValue, minValue, maxValue) {
 function reset() {
     if (grid == 0) {
         scale_factor = Math.floor(canvas.width / num_disks / 3)
+        size = Math.floor(canvas.height / num_disks)
         grid = new Grid(context, size, canvas.width, canvas.height, BACKGROUND, scale_factor);
     }
     else {
