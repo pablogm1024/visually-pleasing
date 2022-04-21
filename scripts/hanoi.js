@@ -39,16 +39,17 @@ class Grid{
 }
 
 class Disk{
-    constructor(size, x, y, bright, background, grid) {
+    constructor(index, size, x, y, bright, background, grid) {
+        this.index = index;
         this.x = x;
         this.y = y;
         this.size = size;
         this.grid = grid;
-        this.bright = bright
-        this.background = background
+        this.bright = bright;
+        this.background = background;
 
         this.draw(true)
-        console.log('Creating disk at ', this.x, ', ', this.y, ' with size ', this.size)
+        console.log('Creating disk ',this.index, 'at ', this.x, ', ', this.y, ' with size ', this.size)
     }
 
     draw(use_bright) {
@@ -65,6 +66,52 @@ class Disk{
         this.x = new_x
         this.y = new_y
         this.draw(true)
+    }
+}
+
+class Game{
+    constructor(num_disks, colors, background, grid) {
+        this.towers = [[], [], []]
+        this.disks = []
+        for (var i = num_disks - 1; i >= 0; i--) {
+            var j = Math.floor(this.towers.length * Math.random())
+            var new_disk = new Disk(i, i + 1, j, this.towers[j].length, colors[i % colors.length], background, grid)
+            this.towers[j].push(new_disk)
+            this.disks[i] = new_disk
+        }
+    }
+
+    move(source, destination) {
+        if (source < 0 || source >= 3 || destination < 0 || destination >= 3 || source == destination) {
+            return
+        }
+        var y_start = this.towers[source].length - 1
+        if (y_start < 0) {
+            return 
+        }
+        var y_end = this.towers[destination].length
+        var disk = this.towers[source].pop()
+        console.log('Moving disk', disk.index, 'from', source, 'to', destination);
+        this.towers[destination].push(disk)
+        disk.move(destination, y_end)
+    }
+
+    get_disk_x(disk_num) {
+        if (disk_num >= this.disks.length) {
+            return -1
+        }
+        return this.disks[disk_num].x
+    }
+
+    can_move_disk(disk_num) {
+        var disk_x = this.get_disk_x(disk_num)
+        if (disk_x == -1) {
+            return false
+        }
+        if (this.towers[disk_x].length > this.disks[disk_num].y + 1) {
+            return false
+        }
+        return true
     }
 }
 
@@ -89,7 +136,6 @@ let crawlers_finished = 0;
 let complete = getParam('complete', 0, 0, 1) ;
 
 let num_disks = 10
-let towers = [[], [], []]
 
 let lastTimestamp = 0;
 
@@ -122,18 +168,24 @@ function getParam(name, defaultValue, minValue, maxValue) {
 
 function reset() {
     if (grid == 0) {
-        scale_factor = Math.floor(canvas.width / num_disks / 3)
+        scale_factor = Math.floor(canvas.width / (num_disks+1) / 3)
         size = Math.floor(canvas.height / num_disks)
         grid = new Grid(context, size, canvas.width, canvas.height, BACKGROUND, scale_factor);
     }
     else {
         grid.clear(BACKGROUND)
     }
-    let towers = [[], [], []]
-    for (var i = num_disks; i > 0; i--) {
-        j = Math.floor(towers.length * Math.random())
-        towers[j].push(new Disk(i, j, towers[j].length, COLORS[i % COLORS.length], BACKGROUND, grid))
+    game = new Game(num_disks, COLORS, BACKGROUND, grid)
+    for (var i = 1; i <= game.disks.length; i++) {
+        var can_move = game.can_move_disk(i)
+        if (can_move) {
+            console.log('Disk', i, 'can be moved')
+        }
+        else {
+            console.log('Disk', i, 'cannot be moved')
+        }
     }
+    game.move(0, 1)
 }
 
 function gameLoop(timeStamp) {
