@@ -79,39 +79,103 @@ class Game{
             this.towers[j].push(new_disk)
             this.disks[i] = new_disk
         }
+        this.raised_column = -1
     }
 
-    move(source, destination) {
-        if (source < 0 || source >= 3 || destination < 0 || destination >= 3 || source == destination) {
+    get_top_disk_from_column(column) {
+        if (column < 0 || column >= 3) {
+            return null;
+        }
+        return this.towers[column][this.towers[column].length-1];
+    }
+
+    raise_disk_in_column(column) {
+        if (this.raised_column != -1) {
             return
+        }
+        if (column < 0 || column >= 3) {
+            return
+        }
+        var disk = this.get_top_disk_from_column(column)
+        if (disk == null) {
+            return
+        }
+        disk.move(column, this.disks.length)
+        this.raised_column = column
+    }
+
+    can_lower_disk_to_column(column) {
+        if (this.raised_column == -1) {
+            return false
+        }
+        if (column < 0 || column >= 3) {
+            return false
+        }
+        if (this.get_top_disk_from_column(column) == null) {
+            return true;
+        }
+        if (this.get_top_disk_from_column(column).size >= this.get_top_disk_from_column(this.raised_column).size) {
+            return true;
+        }
+        return false;
+    }
+
+    lower_disk_to_column(column) {
+        if (this.raised_column == -1) {
+            return
+        }
+        if (column < 0 || column >= 3) {
+            return
+        }
+        if (this.move(this.raised_column, column, true)) {
+            this.raised_column = -1
+        }
+    }
+
+    move(source, destination, force=false) {
+        if (source < 0 || source >= 3 || destination < 0 || destination >= 3 || (source == destination && force != true)) {
+            return false
         }
         var y_start = this.towers[source].length - 1
         if (y_start < 0) {
-            return 
+            return false
         }
         var y_end = this.towers[destination].length
+        if (source == destination) {
+            y_end -= 1;
+        }
         var disk = this.towers[source].pop()
         console.log('Moving disk', disk.index, 'from', source, 'to', destination);
         this.towers[destination].push(disk)
         disk.move(destination, y_end)
+        return true
     }
 
     get_disk_x(disk_num) {
         if (disk_num >= this.disks.length) {
-            return -1
+            return -1;
         }
-        return this.disks[disk_num].x
+        return this.disks[disk_num].x;
     }
 
     can_move_disk(disk_num) {
         var disk_x = this.get_disk_x(disk_num)
         if (disk_x == -1) {
-            return false
+            return false;
         }
         if (this.towers[disk_x].length > this.disks[disk_num].y + 1) {
-            return false
+            return false;
         }
-        return true
+        return true;
+    }
+
+    is_finished() {
+        for (var i = 0; i < 3; i++) {
+            if (this.towers[i].length == this.disks.length) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
@@ -134,12 +198,30 @@ let grid = 0;
 let size = getParam('size', 10, 1, 20);
 let crawlers_finished = 0;
 let complete = getParam('complete', 0, 0, 1) ;
+let game = null;
 
 let num_disks = 10
 
 let lastTimestamp = 0;
 
 window.onload = init;
+document.onkeydown = function(evt) {
+    evt = evt || window.event;
+//    console.log('Key', evt.keyCode, 'has been pressed')
+    column = evt.keyCode - 49
+    if (game.raised_column == -1) {
+        game.raise_disk_in_column(column)
+    }
+    else {
+        if (game.can_lower_disk_to_column(column)) {
+            game.lower_disk_to_column(column)
+        }
+    }
+
+//    if (evt.ctrlKey && evt.keyCode == 90) {
+//        alert("Ctrl-Z");
+//    }
+};
 
 function init(){
     canvas = document.getElementById('canvas');
@@ -168,24 +250,23 @@ function getParam(name, defaultValue, minValue, maxValue) {
 
 function reset() {
     if (grid == 0) {
-        scale_factor = Math.floor(canvas.width / (num_disks+1) / 3)
-        size = Math.floor(canvas.height / num_disks)
+        scale_factor = Math.floor(canvas.width / (num_disks + 1) / 3)
+        size = Math.floor(canvas.height / (num_disks + 1))
         grid = new Grid(context, size, canvas.width, canvas.height, BACKGROUND, scale_factor);
     }
     else {
         grid.clear(BACKGROUND)
     }
     game = new Game(num_disks, COLORS, BACKGROUND, grid)
-    for (var i = 1; i <= game.disks.length; i++) {
-        var can_move = game.can_move_disk(i)
-        if (can_move) {
-            console.log('Disk', i, 'can be moved')
-        }
-        else {
-            console.log('Disk', i, 'cannot be moved')
-        }
-    }
-    game.move(0, 1)
+//    for (var i = 0; i < game.disks.length; i++) {
+//        var can_move = game.can_move_disk(i)
+//        if (can_move) {
+//            console.log('Disk', i, 'can be moved')
+//        }
+//        else {
+//            console.log('Disk', i, 'cannot be moved')
+//        }
+//    }
 }
 
 function gameLoop(timeStamp) {
@@ -201,7 +282,15 @@ function gameLoop(timeStamp) {
 
 function update() {
     <!-- console.log('Updating', crawlers.length,'crawlers'); -->
-//    reset();
+//    if (game.get_top_disk_from_column(0) != null) {
+//        game.move(0, 2);
+//    }
+//    else if (game.get_top_disk_from_column(1) != null) {
+//        game.move(1, 2);
+//    }
+    if (game.is_finished()) {
+        reset();
+    }
 }
 
 function draw() {
